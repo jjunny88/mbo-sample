@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>이투스에듀 2026 · MBO 성과 AI</title>
+<style>
+  :root{
+    --bg:#060E1C; --panel:#0E1A2E; --panel2:#132238; --line:#21344F; --line2:#1A2940;
+    --ink:#EAF0F8; --muted:#93A4BE; --muted2:#5F7393;
+    --blue:#3B82F6; --blue-br:#5BA8FF; --glow:#6FC2FF;
+    --track:#1E3252; --fill:#4DA3FF; --amber:#E8B14C; --amber-bg:rgba(232,177,76,.15);
+    --kfont:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:var(--kfont);background:var(--bg);color:var(--ink);
+    -webkit-font-smoothing:antialiased;line-height:1.55;overflow:hidden}
+  .app{height:100vh;display:flex;flex-direction:column}
+
+  /* ---------- HERO ---------- */
+  .hero{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;text-align:center;padding:24px;overflow:hidden;
+    background:
+      radial-gradient(70% 80% at 50% 18%, #13316B, transparent 70%),
+      radial-gradient(90% 90% at 50% 0%, #0E2A5A 0%, transparent 60%),
+      linear-gradient(180deg,#0A1C3D 0%,#060E1C 70%)}
+  /* glow blobs */
+  .hero::before{content:"";position:absolute;width:680px;height:680px;border-radius:50%;
+    top:-12%;filter:blur(120px);opacity:.5;z-index:0;
+    background:radial-gradient(circle,#2E6BE0 0%,transparent 65%)}
+  .ribbon{position:absolute;z-index:0;width:min(1100px,140%);top:50%;left:50%;
+    transform:translate(-50%,-58%);opacity:.9;pointer-events:none}
+  .hero-in{position:relative;z-index:2;width:100%;max-width:700px}
+
+  .lockup{display:inline-flex;align-items:center;gap:14px;margin-bottom:22px}
+  .lockup .co{font-size:13px;font-weight:700;color:var(--blue-br);letter-spacing:.02em}
+  .lockup .bar{width:1px;height:26px;background:rgba(255,255,255,.25)}
+  .lockup .vy{font-size:13px;font-weight:800;color:#fff;letter-spacing:.02em}
+  .lockup .vy b{color:var(--blue-br)}
+
+  .motif{display:inline-flex;align-items:center;gap:13px;margin-bottom:14px;
+    font-size:14px;font-weight:600;color:rgba(255,255,255,.78)}
+  .motif .ln{width:46px;height:1px;background:linear-gradient(90deg,transparent,var(--blue-br),transparent)}
+
+  .hero h1{font-size:clamp(32px,5.6vw,50px);font-weight:800;letter-spacing:-.03em;color:#fff;
+    line-height:1.12;text-shadow:0 4px 40px rgba(20,60,140,.5)}
+  .hero h1 .em{background:linear-gradient(120deg,#7FD0FF,#3B82F6);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .hero .sub{margin-top:18px;font-size:15px;color:rgba(220,232,248,.84);line-height:1.65;font-weight:500}
+
+  .promptbar{margin-top:40px;display:flex;align-items:center;gap:12px;
+    background:rgba(14,28,52,.6);backdrop-filter:blur(16px);
+    border:1px solid rgba(120,170,255,.28);border-radius:40px;padding:18px 22px;cursor:text;
+    transition:.18s;box-shadow:0 14px 50px rgba(8,24,60,.55)}
+  .promptbar:hover{border-color:rgba(120,170,255,.5);box-shadow:0 14px 60px rgba(40,90,200,.35)}
+  .promptbar input{flex:1;border:none;background:none;outline:none;font-family:inherit;
+    font-size:16px;font-weight:600;color:#fff}
+  .promptbar input::placeholder{color:rgba(190,210,240,.7);font-weight:600}
+  .promptbar .ent{color:var(--blue-br);font-size:18px}
+  .examples{margin-top:18px;display:flex;gap:9px;flex-wrap:wrap;justify-content:center}
+  .ex{font-size:12.5px;font-weight:600;color:rgba(210,228,250,.92);
+    background:rgba(120,170,255,.1);border:1px solid rgba(120,170,255,.22);
+    padding:8px 14px;border-radius:30px;cursor:pointer;transition:.16s}
+  .ex:hover{background:rgba(120,170,255,.22);border-color:rgba(120,170,255,.45)}
+  .heronote{position:absolute;bottom:18px;z-index:2;font-size:11px;color:rgba(160,180,210,.6)}
+
+  /* ---------- CHAT ---------- */
+  .chat{flex:1;display:none;flex-direction:column;height:100vh}
+  .chat.on{display:flex}
+  .chead{display:flex;align-items:center;gap:11px;padding:14px 22px;border-bottom:1px solid var(--line)}
+  .chead .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14px;cursor:pointer}
+  .chead .logo .d{width:18px;height:18px;border-radius:6px;
+    background:linear-gradient(135deg,#5BA8FF,#2E6BE0);box-shadow:0 0 12px rgba(91,168,255,.5)}
+  .chead .who{margin-left:6px;font-size:12px;color:var(--muted)}
+  .chead .who b{color:var(--ink);font-weight:600}
+  .chead .score{margin-left:auto;font-size:11.5px;color:var(--muted);
+    background:var(--panel2);border:1px solid var(--line);padding:5px 12px;border-radius:20px}
+  .chead .score b{color:var(--blue-br);font-weight:800}
+
+  .stream{flex:1;overflow-y:auto;padding:26px 22px 10px}
+  .sin{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+
+  .urow{display:flex;justify-content:flex-end}
+  .ubub{background:linear-gradient(135deg,#2E6BE0,#3B82F6);color:#fff;font-weight:600;
+    font-size:13.5px;padding:11px 16px;border-radius:18px 18px 5px 18px;max-width:78%;
+    box-shadow:0 4px 16px rgba(46,107,224,.32)}
+
+  .arow{display:flex}
+  .card{width:100%;background:var(--panel);border:1px solid var(--line);
+    border-radius:16px;padding:20px 22px;animation:rise .3s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+  .card .hl{font-size:18px;font-weight:800;letter-spacing:-.02em;color:#fff}
+  .card .sl{font-size:13px;color:var(--muted);margin-top:7px;line-height:1.6;white-space:pre-wrap}
+
+  .goals{margin-top:18px;display:flex;flex-direction:column;gap:4px}
+  .grow{display:flex;align-items:center;gap:14px;padding:12px 4px;border-bottom:1px solid var(--line2)}
+  .grow:last-child{border-bottom:none}
+  .gic{flex-shrink:0;width:34px;height:34px;border-radius:9px;background:var(--panel2);
+    border:1px solid var(--line);display:grid;place-items:center;font-size:14px;color:var(--blue-br)}
+  .gtx{flex-shrink:0;width:172px}
+  .gtx .gt{font-size:13px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:7px}
+  .gtx .gn{font-size:11px;color:var(--muted2);margin-top:3px;line-height:1.4;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .gbar{flex:1;height:7px;border-radius:6px;background:var(--track);overflow:hidden}
+  .gbar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#3B82F6,#5BA8FF);
+    transition:width .6s cubic-bezier(.2,.8,.2,1)}
+  .gbar.miss i{background:linear-gradient(90deg,#D89636,#E8B14C)}
+  .gpct{flex-shrink:0;width:42px;text-align:right;font-size:13px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+  .badge{font-size:9.5px;font-weight:800;padding:2px 6px;border-radius:5px;letter-spacing:.02em}
+  .badge.miss{color:var(--amber);background:var(--amber-bg)}
+  .badge.chg{color:var(--blue-br);background:rgba(91,168,255,.14)}
+
+  .narr{margin-top:18px;font-size:13.5px;line-height:1.75;color:#C8D6EC;white-space:pre-wrap}
+  .narr h3{font-size:13.5px;font-weight:800;color:#fff;margin:15px 0 5px}
+  .followups{margin-top:18px;padding-top:15px;border-top:1px solid var(--line2);display:flex;flex-direction:column;gap:13px}
+  .fgroup{display:flex;flex-wrap:wrap;gap:8px}
+  .fgroup .fhint{width:100%;font-size:11px;font-weight:700;color:var(--blue-br);margin-bottom:2px;letter-spacing:.02em}
+  .fgroup .fhint.rec{color:#2DD4BF}
+  .fchip{font-size:12.5px;font-weight:600;color:var(--blue-br);background:rgba(91,168,255,.08);
+    border:1px solid rgba(91,168,255,.28);padding:8px 13px;border-radius:20px;cursor:pointer;transition:.15s;text-align:left}
+  .fchip:hover{background:rgba(91,168,255,.2);border-color:var(--blue-br)}
+  .fchip.rec{color:#2DD4BF;background:rgba(45,212,191,.08);border-color:rgba(45,212,191,.28)}
+  .fchip.rec:hover{background:rgba(45,212,191,.2);border-color:#2DD4BF}
+  .narr h3:first-child{margin-top:0}
+  .narr strong{color:#fff;font-weight:700}
+  .narr .k{color:var(--blue-br);font-weight:700}
+
+  .typing{display:inline-flex;gap:5px;padding:8px 2px}
+  .typing i{width:7px;height:7px;border-radius:50%;background:var(--blue);animation:bl 1.2s infinite}
+  .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+  @keyframes bl{0%,60%,100%{opacity:.25}30%{opacity:1}}
+
+  .composer{padding:14px 22px 20px;border-top:1px solid var(--line)}
+  .cin{max-width:720px;margin:0 auto;display:flex;align-items:flex-end;gap:10px;
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px 10px 10px 16px}
+  .cin:focus-within{border-color:var(--blue)}
+  .cin textarea{flex:1;border:none;background:none;outline:none;resize:none;font-family:inherit;
+    font-size:14px;color:var(--ink);line-height:1.5;max-height:120px;padding:6px 0}
+  .cin textarea::placeholder{color:var(--muted2)}
+  .cbtn{flex-shrink:0;width:38px;height:38px;border-radius:50%;border:none;cursor:pointer;
+    background:linear-gradient(135deg,#3B82F6,#2E6BE0);color:#fff;font-size:17px;
+    display:grid;place-items:center;transition:.15s}
+  .cbtn:hover{filter:brightness(1.15)}
+  .cbtn:disabled{background:var(--line);color:var(--muted2);cursor:not-allowed}
+  .cfoot{max-width:720px;margin:9px auto 0;font-size:10.5px;color:var(--muted2);text-align:center}
+
+  ::-webkit-scrollbar{width:9px}::-webkit-scrollbar-thumb{background:#1E3252;border-radius:5px}
+  @media(max-width:560px){.gtx{width:118px}.card{padding:16px}}
+/* === 전사 차트 블록 === */
+
+  .kpis{margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+  .kpi{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+  .kpi .k{font-size:11px;color:var(--muted);font-weight:700}
+  .kpi .v{font-size:23px;font-weight:800;letter-spacing:-.02em;margin-top:4px}
+  .kpi .v small{font-size:12px;color:var(--muted);font-weight:600}
+
+  /* donut + legend */
+  .donutwrap{margin-top:18px;display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+  .donut{width:150px;height:150px;border-radius:50%;position:relative;flex-shrink:0}
+  .donut::after{content:"";position:absolute;inset:26px;background:var(--panel);border-radius:50%}
+  .donut .ctr{position:absolute;inset:0;display:grid;place-items:center;z-index:2;text-align:center}
+  .donut .ctr b{font-size:20px;font-weight:800}.donut .ctr span{font-size:10px;color:var(--muted)}
+  .legend{display:flex;flex-direction:column;gap:9px}
+  .lg{display:flex;align-items:center;gap:9px;font-size:13px}
+  .lg .sw{width:11px;height:11px;border-radius:3px}
+  .lg .nm{color:var(--ink);font-weight:600;min-width:42px}
+  .lg .vl{color:var(--muted);font-variant-numeric:tabular-nums}
+
+  /* hbars (본부별 stacked) */
+  .hbars{margin-top:18px;display:flex;flex-direction:column;gap:11px}
+  .hb{display:flex;align-items:center;gap:12px}
+  .hb .nm{width:118px;flex-shrink:0;font-size:12.5px;font-weight:600;color:var(--ink);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hb .tr{flex:1;height:18px;border-radius:5px;overflow:hidden;display:flex;background:var(--track)}
+  .hb .seg{height:100%;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;color:#06122a;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+  .hb .tot{width:46px;flex-shrink:0;text-align:right;font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+
+  /* ranking */
+  .rank{margin-top:18px;display:flex;flex-direction:column;gap:9px}
+  .rk{display:flex;align-items:center;gap:12px}
+  .rk .ix{width:18px;font-size:12px;font-weight:800;color:var(--blue-br);text-align:center}
+  .rk .nm{width:118px;flex-shrink:0;font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rk .tr{flex:1;height:9px;border-radius:6px;background:var(--track);overflow:hidden}
+  .rk .tr i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#3B82F6,#5BA8FF);width:0;transition:width .6s}
+  .rk .vl{width:48px;text-align:right;font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums}
+
+  
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <svg class="ribbon" viewBox="0 0 1100 460" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <linearGradient id="rg" x1="0" y1="0" x2="1100" y2="0" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#1E4FA0"/><stop offset=".5" stop-color="#5BA8FF"/><stop offset="1" stop-color="#2E6BE0"/>
+        </linearGradient>
+        <filter id="gl" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <g filter="url(#gl)" opacity=".85">
+        <path d="M150 230 C 150 90, 410 90, 550 230 C 690 370, 950 370, 950 230 C 950 90, 690 90, 550 230 C 410 370, 150 370, 150 230 Z"
+          stroke="url(#rg)" stroke-width="14" stroke-linecap="round" fill="none"/>
+        <path d="M150 230 C 150 90, 410 90, 550 230 C 690 370, 950 370, 950 230 C 950 90, 690 90, 550 230 C 410 370, 150 370, 150 230 Z"
+          stroke="#BFE0FF" stroke-width="2.5" stroke-opacity=".6" fill="none"/>
+      </g>
+      <g filter="url(#gl)">
+        <circle cx="150" cy="230" r="9" fill="#9FD4FF"/><circle cx="950" cy="230" r="9" fill="#9FD4FF"/>
+        <circle cx="550" cy="230" r="7" fill="#E6F3FF"/>
+      </g>
+    </svg>
+
+    <div class="hero-in">
+      <div class="lockup">
+        <span class="co">이투스에듀</span><span class="bar"></span>
+        <span class="vy">2026 <b>비전</b></span>
+      </div>
+      <div class="motif"><span class="ln"></span>성찰을 넘어, 미래로<span class="ln"></span></div>
+      <h1>성과를 읽고 <span class="em">지속 가능한 성장</span>을<br>설계하는 AI</h1>
+      <div class="sub">MBO 수립 · 중간점검 · 인사평가를 하나로 읽어,<br>개인부터 전사 9개 본부까지, 물어보면 차트로 답합니다.</div>
+      <div class="promptbar" id="pbar">
+        <input id="pinput" placeholder="이번 MBO 목표 진척 현황 알려줘" autocomplete="off">
+        <span class="ent">↵</span>
+      </div>
+      <div class="examples" id="examples">
+        <button class="ex" data-q="팀원별 목표 진척 현황 알려줘">팀원별 진척</button>
+        <button class="ex" data-q="김도윤 목표 진척 알려줘">개인 진척(김도윤)</button>
+        <button class="ex" data-q="본부별 정량 정성 비율 비교해줘">본부별 정량·정성</button>
+        <button class="ex" data-q="전사 업무구분 분포 보여줘">전사 업무구분</button>
+      </div>
+    </div>
+    <div class="heronote">MBO 성과관리 AI 데모 · 모든 데이터는 가명 더미 · 자유질문 가능</div>
+  </section>
+
+  <!-- CHAT -->
+  <section class="chat" id="chat">
+    <header class="chead">
+      <div class="logo" id="homeBtn"><span class="d"></span>MBO 성과 AI</div>
+      <div class="who"><b id="cName"></b> · <span id="cRole"></span></div>
+      <div class="score">25년 종합 <b id="cScore"></b></div>
+    </header>
+    <div class="stream" id="stream"><div class="sin" id="sin"></div></div>
+    <div class="composer">
+      <div class="cin">
+        <textarea id="input" rows="1" placeholder="메시지를 입력하세요…"></textarea>
+        <button class="cbtn" id="send">↑</button>
+      </div>
+      <div class="cfoot">데모 · 개인 4명 + 전사 9개 본부 · 모든 데이터 더미(가명)</div>
+    </div>
+  </section>
+</div>
+
+<script>
+const API='';
+const $=id=>document.getElementById(id);
+let busy=false, history=[];
+const COL={정량:'#5BA8FF',정성:'#A78BFA',기본:'#3B82F6',중점:'#2DD4BF',개선:'#E8B14C'};
+
+fetch(API+'/meta').then(r=>r.json()).then(m=>{$('cName').textContent=m.teamName||'인사팀';$('cRole').textContent=(m.people||0)+'명';$('cScore').textContent=(m.orgUnits||0)+'개 본부';}).catch(()=>{});
+
+function go(q){ $('hero').style.display='none'; $('chat').classList.add('on'); ask(q); }
+$('pbar').addEventListener('click',()=>$('pinput').focus());
+$('pinput').addEventListener('keydown',e=>{if(e.key==='Enter'&&$('pinput').value.trim())go($('pinput').value);});
+$('examples').addEventListener('click',e=>{if(e.target.dataset.q)go(e.target.dataset.q);});
+$('homeBtn').addEventListener('click',()=>{$('chat').classList.remove('on');$('hero').style.display='flex';$('sin').innerHTML='';history=[];$('pinput').value='';});
+
+const input=$('input'), sendBtn=$('send'), sin=$('sin'), stream=$('stream');
+input.addEventListener('input',()=>{input.style.height='auto';input.style.height=Math.min(input.scrollHeight,120)+'px';});
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask(input.value);}});
+sendBtn.addEventListener('click',()=>ask(input.value));
+
+function esc(t){return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function rich(t){return esc(t).replace(/\n{2,}/g,'\n\n').replace(/\n*^###?\s*(.+)$\n*/gm,'<h3>$1</h3>')
+  .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\[\[(.+?)\]\]/g,'<span class="k">$1</span>');}
+function addUser(t){const r=document.createElement('div');r.className='urow';
+  r.innerHTML='<div class="ubub">'+esc(t)+'</div>';sin.appendChild(r);stream.scrollTop=stream.scrollHeight;}
+function addThinking(){const r=document.createElement('div');r.className='arow';
+  r.innerHTML='<div class="card"><div class="typing"><i></i><i></i><i></i></div></div>';
+  sin.appendChild(r);stream.scrollTop=stream.scrollHeight;return r.querySelector('.card');}
+function errorCard(card,msg){card.innerHTML='<div class="narr">'+esc(msg)+'</div>';}
+
+/* ---- 블록 렌더러 ---- */
+const ICONS=['◆','▣','◈','●','▲','■'];
+function elProgress(items){
+  return '<div class="goals">'+items.map((g,i)=>{
+    const pct=Math.max(0,Math.min(100,+g.pct||0));
+    const miss=(g.status==='목표미달');
+    const badge=miss?'<span class="badge miss">목표미달</span>':(g.badge?'<span class="badge chg">'+esc(g.badge)+'</span>':'');
+    return '<div class="grow"><div class="gic">'+ICONS[i%ICONS.length]+'</div>'+
+      '<div class="gtx"><div class="gt">'+esc(g.title)+badge+'</div>'+
+      (g.note?'<div class="gn">'+esc(g.note)+'</div>':'')+'</div>'+
+      '<div class="gbar'+(miss?' miss':'')+'"><i data-w="'+pct+'" style="width:0%"></i></div>'+
+      '<div class="gpct">'+pct+'%</div></div>';
+  }).join('')+'</div>';
+}
+function elKpi(items){return '<div class="kpis">'+items.map(k=>`<div class="kpi"><div class="k">${esc(k.k)}</div><div class="v">${esc(String(k.v))}${k.unit?'<small> '+esc(k.unit)+'</small>':''}</div></div>`).join('')+'</div>';}
+function elDonut(b){
+  let acc=0;const stops=(b.parts||[]).map(p=>{const a=acc,c=acc+(+p.val||0);acc=c;return `${p.color||'#5BA8FF'} ${a}% ${c}%`;}).join(',');
+  const lg=(b.parts||[]).map(p=>`<div class="lg"><span class="sw" style="background:${p.color||'#5BA8FF'}"></span><span class="nm">${esc(p.name)}</span><span class="vl">${p.val}%${p.cnt!=null?' · '+(+p.cnt).toLocaleString()+'건':''}</span></div>`).join('');
+  return `<div class="donutwrap"><div class="donut" style="background:conic-gradient(${stops})"><div class="ctr"><div><b>${esc(String(b.centerB||''))}</b><br><span>${esc(b.centerS||'')}</span></div></div></div><div class="legend">${lg}</div></div>`;
+}
+function elHbars(b){const segs=b.segs||[];
+  return '<div class="hbars">'+(b.rows||[]).map(r=>{
+    const bar=segs.map(s=>{const v=(r.vals&&r.vals[s])||0;return `<div class="seg" style="width:${v}%;background:${COL[s]||'#5BA8FF'}">${v>=12?v+'%':''}</div>`;}).join('');
+    return `<div class="hb"><div class="nm" title="${esc(r.name)}">${esc(r.name)}</div><div class="tr">${bar}</div><div class="tot">${r.tot!=null?r.tot:''}</div></div>`;
+  }).join('')+'</div>';
+}
+function elRank(b){const rows=b.rows||[];const mx=Math.max(1,...rows.map(r=>+r.val||0));
+  return '<div class="rank">'+rows.map((r,i)=>`<div class="rk"><div class="ix">${i+1}</div><div class="nm" title="${esc(r.name)}">${esc(r.name)}</div><div class="tr"><i data-w="${((+r.val||0)/mx*100).toFixed(1)}"></i></div><div class="vl">${r.val}%</div></div>`).join('')+'</div>';}
+
+function render(card,obj){
+  let h='';
+  if(obj.headline)h+='<div class="hl">'+esc(obj.headline)+'</div>';
+  if(obj.subline)h+='<div class="sl">'+esc(obj.subline)+'</div>';
+  (obj.blocks||[]).forEach(b=>{
+    if(b.type==='progress')h+=elProgress(b.items||[]);
+    else if(b.type==='kpi')h+=elKpi(b.items||[]);
+    else if(b.type==='donut')h+=elDonut(b);
+    else if(b.type==='hbars')h+=elHbars(b);
+    else if(b.type==='rank')h+=elRank(b);
+  });
+  if(obj.narrative)h+='<div class="narr">'+rich(obj.narrative)+'</div>';
+  const rel=Array.isArray(obj.related)?obj.related.slice(0,3):[];
+  const rec=Array.isArray(obj.recommended)?obj.recommended.slice(0,2):[];
+  if(rel.length||rec.length){
+    h+='<div class="followups">';
+    if(rel.length){h+='<div class="fgroup"><div class="fhint">🔍 연관 질문</div>'+
+      rel.map(f=>'<button class="fchip">'+esc(f)+'</button>').join('')+'</div>';}
+    if(rec.length){h+='<div class="fgroup"><div class="fhint rec">💡 추천 질문</div>'+
+      rec.map(f=>'<button class="fchip rec">'+esc(f)+'</button>').join('')+'</div>';}
+    h+='</div>';
+  }
+  card.innerHTML=h;
+  card.querySelectorAll('.fchip').forEach(b=>b.addEventListener('click',()=>{if(!busy)ask(b.textContent);}));
+  card.querySelectorAll('.gbar i,.rk .tr i').forEach(i=>requestAnimationFrame(()=>setTimeout(()=>i.style.width=(i.dataset.w||0)+'%',60)));
+  stream.scrollTop=stream.scrollHeight;
+}
+
+/* 잘리거나 잡티 있는 JSON 복구 */
+function parseLoose(raw){
+  if(!raw) return {headline:'',blocks:[],narrative:'응답이 비었습니다.'};
+  try{ return JSON.parse(raw); }catch(e){}
+  const s=raw.indexOf('{'), e=raw.lastIndexOf('}');
+  if(s>=0&&e>s){ try{ return JSON.parse(raw.slice(s,e+1)); }catch(_){} }
+  // 최후: headline/narrative만 살림
+  const body=s>=0?raw.slice(s):raw;
+  const g=k=>{const m=body.match(new RegExp('"'+k+'"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"'));return m?m[1].replace(/\\"/g,'"').replace(/\\n/g,'\n'):'';};
+  return {headline:g('headline'),subline:g('subline'),blocks:[],narrative:g('narrative')||'응답을 해석하지 못했습니다. 다시 질문해 주세요.'};
+}
+
+async function ask(text){
+  text=(text||'').trim(); if(!text||busy)return;
+  input.value='';input.style.height='auto';
+  addUser(text); busy=true; sendBtn.disabled=true;
+  const card=addThinking();
+  try{
+    const res=await fetch(API+'/ask',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({question:text,history})});
+    const data=await res.json();
+    if(data.error){ errorCard(card,'서버 오류: '+data.error); }
+    else{
+      let raw=(data.reply||'').replace(/```json/gi,'').replace(/```/g,'').trim();
+      const obj=parseLoose(raw);
+      render(card,obj);
+      history.push({role:'user',content:text},{role:'assistant',content:raw});
+      if(history.length>6)history=history.slice(-6);
+    }
+  }catch(err){
+    errorCard(card,'서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.');
+  }
+  busy=false;sendBtn.disabled=false;input.focus();stream.scrollTop=stream.scrollHeight;
+}
+</script></body>
+</html>
