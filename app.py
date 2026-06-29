@@ -5,7 +5,8 @@ MBO 성과 AI - Render 배포용 서버 (더미 데이터)
 키와 비번은 Render 환경변수에서만 읽습니다 (코드/깃허브에 없음).
 
 환경변수:
-  ANTHROPIC_API_KEY  = sk-ant-...   (필수)
+  GEMINI_API_KEY     = AIza... 또는 발급키   (필수)
+  GEMINI_MODEL       = 모델명 (기본 gemini-2.5-flash)
   APP_PASSWORD       = 접속 비밀번호 (없으면 기본값 etoos2026)
   PORT               = Render가 자동 주입
 """
@@ -17,22 +18,23 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 try:
-    from anthropic import Anthropic
+    import google.generativeai as genai
 except ImportError:
-    print("[설치 필요] pip install anthropic")
+    print("[설치 필요] pip install google-generativeai")
     sys.exit(1)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-API_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-if not API_KEY.startswith("sk-ant-"):
-    print("[오류] 환경변수 ANTHROPIC_API_KEY 가 없거나 형식이 이상합니다.")
+API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+if not API_KEY:
+    print("[오류] 환경변수 GEMINI_API_KEY 가 없습니다.")
     sys.exit(1)
 
+MODEL_NAME = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip()
 APP_PASSWORD = os.environ.get("APP_PASSWORD", "etoos2026").strip()
 AUTH_USER = "etoos"  # 비번만 맞으면 됨 (아이디는 고정)
 
-client = Anthropic(api_key=API_KEY)
+genai.configure(api_key=API_KEY)
 
 with open(os.path.join(HERE, "dummy_data.json"), encoding="utf-8") as f:
     DB = json.load(f)
@@ -79,6 +81,12 @@ SYSTEM_PROMPT = f"""당신은 이투스에듀 인사팀의 조직·성과 분석
 
 [전사 데이터]
 {json.dumps(ORG, ensure_ascii=False)}"""
+
+model = genai.GenerativeModel(
+    model_name=MODEL_NAME,
+    system_instruction=SYSTEM_PROMPT,
+    generation_config={"response_mime_type": "application/json", "max_output_tokens": 2200},
+)
 
 
 def avg_progress(p):
@@ -147,14 +155,15 @@ class Handler(BaseHTTPRequestHandler):
             history = payload.get("history") or []
             if not question:
                 return self._send(400, json.dumps({"error": "empty question"}))
-            messages = history + [{"role": "user", "content": question}]
-            resp = client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=2200,
-                system=SYSTEM_PROMPT,
-                messages=messages,
-            )
-            text = "".join(b.text for b in resp.content if b.type == "text").strip()
+            # 대화 히스토리를 Gemini 형식으로 변환 (assistant -> model)
+            contents = []
+            for m in history:
+                role = "model" if m.get("role") == "assistant" else "user"
+                contents.append({"role": role, "parts": [{"text": m.get("content", "")}]})
+            contents.append({"role": "user", "parts": [{"text": question}]})
+
+            resp = model.generate_content(contents)
+            text = (getattr(resp, "text", "") or "").strip()
             self._send(200, json.dumps({"reply": text}, ensure_ascii=False))
         except Exception as e:
             print("[ERROR]", repr(e))
